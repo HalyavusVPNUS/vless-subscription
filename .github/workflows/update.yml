@@ -1,0 +1,41 @@
+name: Update VLESS subscription
+
+on:
+  schedule:
+    # Every hour at minute 17 (GitHub Actions cron uses UTC).
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-vless-subscription
+  cancel-in-progress: false
+
+jobs:
+  update-subscription:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get repository files
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Convert JSON configs to VLESS links
+        run: python main.py
+
+      - name: Save updated subscription
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add hysteria.txt
+          if git diff --cached --quiet; then
+            echo "Подписка не изменилась — новый коммит не нужен."
+          else
+            git commit -m "Update VLESS subscription"
+            git push
+          fi
